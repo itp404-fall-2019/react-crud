@@ -10,12 +10,12 @@ import "./App.css";
 
 const { REACT_APP_API: API } = process.env;
 
-class CreatePostForm extends React.Component {
+class PostForm extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      title: "",
-      body: ""
+      title: props.title || "",
+      body: props.body || ""
     };
   }
   handleTitleChange = event => {
@@ -24,25 +24,14 @@ class CreatePostForm extends React.Component {
   handleBodyChange = event => {
     this.setState({ body: event.target.value });
   };
-  handleSubmit = async event => {
+  handleSubmit = event => {
     event.preventDefault();
-    await fetch(`${API}/api/posts`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        title: this.state.title,
-        body: this.state.body
-      })
+    this.props.onSubmit({
+      title: this.state.title,
+      body: this.state.body
     });
-
-    this.setState({ toPosts: true });
   };
   render() {
-    if (this.state.toPosts) {
-      return <Redirect to="/" />;
-    }
     return (
       <form onSubmit={this.handleSubmit}>
         <div>
@@ -62,22 +51,41 @@ class CreatePostForm extends React.Component {
   }
 }
 
+class CreatePostForm extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {};
+  }
+  createPost = async updatedPost => {
+    await fetch(`${API}/api/posts`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        title: updatedPost.title,
+        body: updatedPost.body
+      })
+    });
+
+    this.setState({ toPosts: true });
+  };
+  render() {
+    if (this.state.toPosts) {
+      return <Redirect to="/" />;
+    }
+    return <PostForm onSubmit={this.createPost} />;
+  }
+}
+
 class EditPostForm extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      title: "",
-      body: ""
+      loading: true
     };
   }
-  handleTitleChange = event => {
-    this.setState({ title: event.target.value });
-  };
-  handleBodyChange = event => {
-    this.setState({ body: event.target.value });
-  };
-  handleSubmit = async event => {
-    event.preventDefault();
+  updatePost = async updatedPost => {
     const { id } = this.props.match.params;
     await fetch(`${API}/api/posts/${id}`, {
       method: "PUT",
@@ -85,8 +93,8 @@ class EditPostForm extends React.Component {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        title: this.state.title,
-        body: this.state.body
+        title: updatedPost.title,
+        body: updatedPost.body
       })
     });
 
@@ -96,27 +104,23 @@ class EditPostForm extends React.Component {
     const { id } = this.props.match.params;
     const response = await fetch(`${API}/api/posts/${id}`);
     const { title, body } = await response.json();
-    this.setState({ title, body });
+    this.setState({ title, body, loading: false });
   }
   render() {
     if (this.state.toPosts) {
       return <Redirect to="/" />;
     }
+
+    if (this.state.loading) {
+      return <div>Loading...</div>;
+    }
+
     return (
-      <form onSubmit={this.handleSubmit}>
-        <div>
-          <label>Title</label>
-          <input value={this.state.title} onChange={this.handleTitleChange} />
-        </div>
-        <div>
-          <label>Body</label>
-          <textarea
-            value={this.state.body}
-            onChange={this.handleBodyChange}
-          ></textarea>
-        </div>
-        <button>Publish</button>
-      </form>
+      <PostForm
+        title={this.state.title}
+        body={this.state.body}
+        onSubmit={this.updatePost}
+      />
     );
   }
 }
