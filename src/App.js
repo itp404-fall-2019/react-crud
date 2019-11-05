@@ -3,23 +3,58 @@ import {
   BrowserRouter as Router,
   NavLink,
   Switch,
-  Route
+  Route,
+  Redirect
 } from "react-router-dom";
 import "./App.css";
 
 const { REACT_APP_API: API } = process.env;
 
 class PostForm extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      title: "",
+      body: ""
+    };
+  }
+  handleTitleChange = event => {
+    this.setState({ title: event.target.value });
+  };
+  handleBodyChange = event => {
+    this.setState({ body: event.target.value });
+  };
+  handleSubmit = async event => {
+    event.preventDefault();
+    await fetch(`${API}/api/posts`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        title: this.state.title,
+        body: this.state.body
+      })
+    });
+
+    this.setState({ toPosts: true });
+  };
   render() {
+    if (this.state.toPosts) {
+      return <Redirect to="/" />;
+    }
     return (
-      <form>
+      <form onSubmit={this.handleSubmit}>
         <div>
           <label>Title</label>
-          <input />
+          <input value={this.state.title} onChange={this.handleTitleChange} />
         </div>
         <div>
           <label>Body</label>
-          <textarea></textarea>
+          <textarea
+            value={this.state.body}
+            onChange={this.handleBodyChange}
+          ></textarea>
         </div>
         <button>Publish</button>
       </form>
