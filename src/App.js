@@ -10,7 +10,7 @@ import "./App.css";
 
 const { REACT_APP_API: API } = process.env;
 
-class PostForm extends React.Component {
+class CreatePostForm extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -39,6 +39,65 @@ class PostForm extends React.Component {
 
     this.setState({ toPosts: true });
   };
+  render() {
+    if (this.state.toPosts) {
+      return <Redirect to="/" />;
+    }
+    return (
+      <form onSubmit={this.handleSubmit}>
+        <div>
+          <label>Title</label>
+          <input value={this.state.title} onChange={this.handleTitleChange} />
+        </div>
+        <div>
+          <label>Body</label>
+          <textarea
+            value={this.state.body}
+            onChange={this.handleBodyChange}
+          ></textarea>
+        </div>
+        <button>Publish</button>
+      </form>
+    );
+  }
+}
+
+class EditPostForm extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      title: "",
+      body: ""
+    };
+  }
+  handleTitleChange = event => {
+    this.setState({ title: event.target.value });
+  };
+  handleBodyChange = event => {
+    this.setState({ body: event.target.value });
+  };
+  handleSubmit = async event => {
+    event.preventDefault();
+    const { id } = this.props.match.params;
+    await fetch(`${API}/api/posts/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        title: this.state.title,
+        body: this.state.body
+      })
+    });
+
+    this.setState({ toPosts: true });
+  };
+  async componentDidMount() {
+    const { id } = this.props.match.params;
+    const response = await fetch(`${API}/api/posts/${id}`);
+    const { title, body } = await response.json();
+    this.setState({ title, body });
+  }
   render() {
     if (this.state.toPosts) {
       return <Redirect to="/" />;
@@ -96,7 +155,7 @@ class PostsPage extends React.Component {
           {this.state.posts.map(post => {
             return (
               <li key={post.id}>
-                <NavLink to={`/posts/${post.id}`}>{post.title}</NavLink>
+                <NavLink to={`/posts/${post.id}/edit`}>{post.title}</NavLink>
                 <button onClick={this.deletePost.bind(this, post.id)}>
                   Delete
                 </button>
@@ -128,7 +187,8 @@ export default class App extends React.Component {
         </nav>
         <Switch>
           <Route path="/" exact={true} component={PostsPage} />
-          <Route path="/posts/write" component={PostForm} />
+          <Route path="/posts/write" component={CreatePostForm} />
+          <Route path="/posts/:id/edit" component={EditPostForm} />
         </Switch>
       </Router>
     );
